@@ -67,18 +67,22 @@ class App(ctk.CTk):
         self.insights.configure(state='disabled')
         
         # Cleaning Options
-        self.check_var1, self.check_var2, self.check_var3, self.check_var4 = ctk.StringVar(value='off'), ctk.StringVar(value='off'), ctk.StringVar(value='off'), ctk.StringVar(value='off')
-        # self.check_var2 = ctk.StringVar(value='off')
-        # self.check_var3 = ctk.StringVar(value='off')
-        # self.check_var4 = ctk.StringVar(value='off')
-        self.checkbox_1 = ctk.CTkCheckBox(master=self.clean_data_frame, text="Delete NaN values", variable = self.check_var1, onvalue='on', offvalue='off')
-        self.checkbox_1.grid(row=2, column=0, padx=10, pady=10)
-        self.checkbox_2 = ctk.CTkCheckBox(master=self.clean_data_frame, text="Fill NaN with 0", variable = self.check_var2, onvalue='on', offvalue='off')
-        self.checkbox_2.grid(row=2, column=1, padx=10, pady=10)
-        self.checkbox_3 = ctk.CTkCheckBox(master=self.clean_data_frame, text="Remove duplicates", variable = self.check_var3, onvalue='on', offvalue='off')
-        self.checkbox_3.grid(row=2, column=2, padx=10, pady=10)
-        self.checkbox_4 = ctk.CTkCheckBox(master=self.clean_data_frame, text="Clean ?~()$#@!%*; values", variable = self.check_var4, onvalue='on', offvalue='off')
-        self.checkbox_4.grid(row=2, column=3, padx=10, pady=10)
+        # Initial values set
+        self.nan_action, self.check_var1, self.check_var2 = ctk.StringVar(value='none'), ctk.StringVar(value='off'), ctk.StringVar(value='off')
+        
+        # Radio Buttons
+        self.radio_delete_nan = ctk.CTkRadioButton(master=self.clean_data_frame, text="Delete NaN values", variable=self.nan_action, value='delete')
+        self.radio_delete_nan.grid(row=2, column=0, padx=10, pady=10)   
+        self.radio_fill_nan = ctk.CTkRadioButton(master=self.clean_data_frame, text="Fill NaN with 0", variable=self.nan_action, value='fill')
+        self.radio_fill_nan.grid(row=2, column=1, padx=10, pady=10)
+        
+        # Checkbox buttons  
+        self.checkbox_1 = ctk.CTkCheckBox(master=self.clean_data_frame, text="Remove duplicates", variable = self.check_var1, onvalue='on', offvalue='off')
+        self.checkbox_1.grid(row=2, column=2, padx=10, pady=10)
+        self.checkbox_2 = ctk.CTkCheckBox(master=self.clean_data_frame, text="Clean ?~()$#@!%&*; values", variable = self.check_var2, onvalue='on', offvalue='off')
+        self.checkbox_2.grid(row=2, column=3, padx=10, pady=10)
+        
+        # Action buttons
         self.clean_btn = ctk.CTkButton(self.clean_data_frame, text='Submit', command = self.clean_event, width=180, height=40)
         self.clean_btn.grid(row=3, column=1, padx=10, pady=10)
         self.clean_btn = ctk.CTkButton(self.clean_data_frame, text='Clear', command = self.clear_selection, fg_color='#EE6055')
@@ -98,7 +102,7 @@ class App(ctk.CTk):
             self.df = pd.read_csv(file)
             self.column_selection.configure(values=self.df.columns.tolist())
             self.select_cols_btn.configure(state="normal")
-
+            self.original_filename = os.path.splitext(os.path.basename(file))[0]
 
    
     # Column Selection and Table Creation Function
@@ -129,29 +133,45 @@ class App(ctk.CTk):
 
     # Data Cleaning Function
     def clean_event(self):
-        if self.check_var1.get() == 'on':
+        if self.nan_action.get() == 'delete':
             self.df[self.column] = self.df[self.column].dropna() # Inplace not the good choice here
             print('Cleaned successfully')
-        if self.check_var2.get() == 'on':
+        if self.nan_action.get() == 'fill':
             self.df[self.column].fillna(value = 0, inplace=True)
             print('Filled Successfully')
-        if self.check_var3.get() == 'on':
+        if self.check_var1.get() == 'on':
             self.df.drop_duplicates(subset=[self.column], inplace=True)
             print('Duplicates Removed')
-        if self.check_var4.get() == 'on':
-            print("Clean ?~()$#@!%*; values")
+        if self.check_var2.get() == 'on':
+            self.df[self.column] = self.df[self.column].str.replace('[?~()$#@!%&*;]', '', regex=True)
+            print("Special characters removed")
 
+        save_file = tk.messagebox.askyesno("Save File", "Do you want to download the cleaned data?")
+        if save_file:
+            self.save_cleaned_file()
+            
+    def save_cleaned_file(self):
+        save_path = tk.filedialog.asksaveasfilename(
+            initialfile=self.original_filename + '1',
+            defaultextension='.csv',
+            filetypes=[("CSV files", "*.csv")],
+            title="Save cleaned data"
+        )
+        if save_path:
+            self.df.to_csv(save_path, index=False)
+            tk.messagebox.showinfo("File Saved", "Cleaned data saved successfully!")
+    
     # Clear Checkbox Selection Function 
     def clear_selection(self):
         self.checkbox_1.deselect()       
         self.checkbox_2.deselect()       
-        self.checkbox_3.deselect()
+
        
     # Toggle Checkbox Selection Function
     def toggle_selection(self):
         self.checkbox_1.toggle()
         self.checkbox_2.toggle()
-        self.checkbox_3.toggle()
+
         
 # Run App             
 if __name__ == "__main__":
