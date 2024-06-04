@@ -24,7 +24,8 @@ class App(ctk.CTk):
         self.tree = None
         self.insights_text = None
         self.font = ctk.CTkFont(size = 18, weight= 'bold')
-
+        self.welcome_text = "This is a simple data cleaning application. \nIt is capable of dealing with missing values, duplicates,\nand special characters(only in strings) in CSV files. \
+                \n\n1. Select a file you want to modify.\n2. Select a column from dropdown \nand click 'Select Column' button.\n3. Choose an operation to perform and click Submit."
         # Load and Create Background Image
         current_path = os.path.dirname(os.path.realpath(__file__))
         self.bg_image = ctk.CTkImage(Image.open(current_path + "/images/bg_img_main.jpeg"),
@@ -36,20 +37,27 @@ class App(ctk.CTk):
         self.main_frame = ctk.CTkFrame(self, corner_radius = 0)
         self.main_frame.grid(row=0, column = 0, sticky='ns')
         
-        # File Selection Part 
-        self.select_file_label = ctk.CTkLabel(self.main_frame, text="Select File to open",
+        # Welcome Part
+        self.welcome_label = ctk.CTkLabel(self.main_frame, text="Welcome to Data Cleaner App!",
                                               font=self.font)
-        self.select_file_label.grid(row = 0, column = 0, padx = 50, pady = (150, 15))
+        self.welcome_label.grid(row = 0, column = 0, padx = 20, pady = (30, 0), columnspan = 2)     
+        self.description_label = ctk.CTkLabel(self.main_frame, text=self.welcome_text)
+        self.description_label.grid(row = 1, column = 0, padx = 20, pady = (10, 40), columnspan = 2)
+        
+        # File Selection Part 
+        self.select_file_label = ctk.CTkLabel(self.main_frame, text="Select File to Open",
+                                              font=self.font)
+        self.select_file_label.grid(row = 2, column = 0, padx = 50, pady = 10, columnspan = 2)
         self.select_file_btn = ctk.CTkButton(self.main_frame, text="Select File", command=self.open_file)
-        self.select_file_btn.grid(row = 1, column = 0, padx = 50, pady=15)
+        self.select_file_btn.grid(row = 3, column = 0, padx = 50, pady=10, columnspan = 2)
         
         # Column Selection Part
-        self.select_cols_label = ctk.CTkLabel(self.main_frame, text="Select a column to modify")
-        self.select_cols_label.grid(row=0, column = 1, sticky='ns', padx=50, pady=(150,15))
+        self.select_cols_label = ctk.CTkLabel(self.main_frame, text="Select a Column to Modify", font= self.font)
+        self.select_cols_label.grid(row=4, column = 0, sticky='ns', padx=50, pady=10, columnspan = 2)
         self.column_selection = ctk.CTkComboBox(self.main_frame, values=[], state='readonly')
-        self.column_selection.grid(row=1, column=1, padx=50, pady=15)
+        self.column_selection.grid(row=5, column=0, padx=50, pady=10, columnspan = 2)
         self.select_cols_btn = ctk.CTkButton(self.main_frame, text="Select Column", command=self.selected_column_event)
-        self.select_cols_btn.grid(row=2, column=1, padx=30, pady=15)
+        self.select_cols_btn.grid(row=6, column=0, padx=30, pady=10, columnspan = 2)
         self.select_cols_btn.configure(state="disabled")
         
     # Data Manipulation Frame
@@ -111,29 +119,32 @@ class App(ctk.CTk):
    
     # Column Selection and Table Creation Function
     def selected_column_event(self):
-        self.column = self.column_selection.get()   
-        self.main_frame.grid_forget()
-        self.clean_data_frame.grid(row=0, column=0, sticky='ns')
+        self.column = self.column_selection.get()
+        if self.column == "":
+            tk.messagebox.showinfo("Warning!", "Please choose a column!")
+        else:
+            self.main_frame.grid_forget()
+            self.clean_data_frame.grid(row=0, column=0, sticky='ns')
         # Display selected column data in a table
-        if self.tree:
-            self.tree.destroy()
-            
-        self.tree = tk.ttk.Treeview(self.clean_data_frame, columns=('Value'), show='headings')
-        self.tree.heading('Value', text=self.column)
-        self.tree.grid(row=1, column=0,  padx=30, pady = (0, 20))
+            if self.tree:
+                self.tree.destroy()
+                
+            self.tree = tk.ttk.Treeview(self.clean_data_frame, columns=('Value'), show='headings')
+            self.tree.heading('Value', text=self.column)
+            self.tree.grid(row=1, column=0,  padx=30, pady = (0, 20))
 
-        for value in self.df[self.column].head(5):
-            self.tree.insert('', tk.END, values=(value,))
+            for value in self.df[self.column].head(5):
+                self.tree.insert('', tk.END, values=(value,))
 
-        # Display some insights about the data
-        insights_text = (f'{self.df[self.column].describe()} \n'
-                         f'Number of values in the column: {self.df[self.column].count()} \n'
-                         f'Null values in the column: {self.df[self.column].isnull().sum()} \n'
-                         f'Data type: {self.df[self.column].dtype}')
-        self.insights.configure(state='normal')
-        self.insights.delete('1.0', tk.END)
-        self.insights.insert(tk.END, insights_text)
-        self.insights.configure(state='disabled')
+            # Display some insights about the data
+            insights_text = (f'{self.df[self.column].describe()} \n'
+                            f'Number of values in the column: {self.df[self.column].count()} \n'
+                            f'Null values in the column: {self.df[self.column].isnull().sum()} \n'
+                            f'Data type: {self.df[self.column].dtype}')
+            self.insights.configure(state='normal')
+            self.insights.delete('1.0', tk.END)
+            self.insights.insert(tk.END, insights_text)
+            self.insights.configure(state='disabled')
 
     # Data Cleaning Function
     def clean_event(self):
@@ -149,11 +160,15 @@ class App(ctk.CTk):
         if self.check_var2.get() == 'on':
             self.df[self.column] = self.df[self.column].str.replace('[?~()$#@!%&*;]', '', regex=True)
             print("Special characters removed")
-
-        save_file = tk.messagebox.askyesno("Save File", "Do you want to download the cleaned data?")
-        if save_file:
-            self.save_cleaned_file()
-            
+        if (self.nan_action.get() not in ['delete', 'fill']
+            and self.check_var1.get() != 'on'
+            and self.check_var2.get() != 'on'):
+            tk.messagebox.showinfo("Warning!", "Select a cleaning operation and click Submit.")
+        else:
+            save_file = tk.messagebox.askyesno("Save File", "Do you want to download the cleaned data?")
+            if save_file:
+                self.save_cleaned_file()
+                
     def save_cleaned_file(self):
         save_path = tk.filedialog.asksaveasfilename(
             initialfile=self.original_filename + '_cleaned',
