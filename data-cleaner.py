@@ -149,13 +149,13 @@ class App(ctk.CTk):
     # Data Cleaning Function
     def clean_event(self):
         if self.nan_action.get() == 'delete':
-            self.df[self.column] = self.df[self.column].dropna() # Inplace not the good choice here
+            self.df[self.column] = self.df[self.column].dropna()
             print('Cleaned successfully')
         elif self.nan_action.get() == 'fill':
-            self.df[self.column].fillna(value = 0, inplace=True)
+            self.df[self.column] = self.df[self.column].fillna(value = 0)
             print('Filled Successfully')
         if self.check_var1.get() == 'on':
-            self.df.drop_duplicates(subset=[self.column], inplace=True)
+            self.df = self.df.drop_duplicates(subset=[self.column])
             print('Duplicates Removed')
         if self.check_var2.get() == 'on':
             self.df[self.column] = self.df[self.column].str.replace('[?~()$#@!%&*;]', '', regex=True)
